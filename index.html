@@ -8,10 +8,17 @@
   </head>
   <body>
     <h1>High Flyer Game</h1>
+    <h1 id="nicknameText">High Flyer Game</h1>
     <div id="nicknameContainer">
       <input id="nicknameInput" type="text" placeholder="Enter your nickname" />
-      <button id="startGameButton">Start Game</button>
+      <input
+        id="phoneNumberInput"
+        type="number"
+        placeholder="Enter your phone number"
+      />
     </div>
+    <button id="startGameButton">Start Game</button>
+    <button id="logOutButton">Log out</button>
     <button id="restartButton" style="display: none">Restart Game</button>
     <canvas id="gameCanvas"></canvas>
     <script src="script.js"></script>

@@ -1,9 +1,11 @@
 const canvas = document.getElementById('gameCanvas')
 const ctx = canvas.getContext('2d')
 const restartButton = document.getElementById('restartButton')
-const nicknameInput = document.getElementById('nicknameInput')
+var nicknameInput = document.getElementById('nicknameInput')
+var phoneNumberInput = document.getElementById('phoneNumberInput')
+const logOutButton = document.getElementById('logOutButton')
 const startGameButton = document.getElementById('startGameButton')
-
+const nicknameText = document.getElementById('nicknameText')
 const API_URL = 'http://localhost:5000'
 
 const maxCanvasWidth = 800
@@ -14,15 +16,15 @@ canvas.height = Math.min(window.innerHeight * 0.8, maxCanvasHeight)
 
 let flyerX = 100
 let flyerY = canvas.height / 2
-const gravity = 0.6
-const lift = -12
+const gravity = 0.5
+const lift = -8
 let velocity = 0
 const maxFallSpeed = 10
 let frameCount = 0
 let gameRunning = false
 
 let score = 0
-let highScore = 0
+let highScore = Number(localStorage.getItem('highscore')) || 0
 
 let obstacles = []
 const minObstacleWidth = 50
@@ -68,10 +70,25 @@ async function fetchLeaderboard() {
   }
 }
 
-// Post user highscore to the backend
+async function addUser(nickname, phone) {
+  const response = await fetch(`${API_URL}/addUser`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nickname, phone }),
+  })
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw data.error || 'Something went wrong'
+  }
+
+  return data
+}
+
 async function updateUserHighscore(nickname, highscore) {
   try {
-    const response = await fetch(`${API_URL}/leaderboard`, {
+    const response = await fetch(`${API_URL}/update-score`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nickname, highscore }),
@@ -80,7 +97,7 @@ async function updateUserHighscore(nickname, highscore) {
     if (!response.ok) {
       const errorData = await response.json()
       if (errorData.error) {
-        alert(errorData.error) // Show the error message to the user
+        alert(errorData.error)
       }
       return
     }
@@ -92,22 +109,79 @@ async function updateUserHighscore(nickname, highscore) {
   }
 }
 
-// Start Game Button
+document.addEventListener('DOMContentLoaded', () => {
+  let nicknameContainer = document.getElementById('nicknameContainer')
+  let nickname = localStorage.getItem('nickname')
+  let number = localStorage.getItem('number')
+
+  if (nickname && number) {
+    nicknameText.innerText = nickname
+    nicknameText.style.textShadow = '0 0 4px black'
+
+    nicknameInput = nickname
+    phoneNumberInput = number
+    nicknameContainer.style.display = 'none'
+    console.log(`Welcome back, ${nickname}!`)
+  } else {
+    logOutButton.style.display = 'none'
+  }
+})
+
+logOutButton.addEventListener('click', async () => {
+  localStorage.removeItem('nickname')
+  localStorage.removeItem('number')
+  localStorage.removeItem('highscore')
+  location.reload()
+})
+
 startGameButton.addEventListener('click', async () => {
-  userNickname = nicknameInput.value.trim()
+  const nickname = localStorage.getItem('nickname')
+  const number = localStorage.getItem('number')
+  nicknameText.style.display = 'none'
+
+  await fetchLeaderboard()
+  userNickname =
+    (nicknameInput.value && nicknameInput.value.trim()) || nicknameInput
+  userNumber =
+    (phoneNumberInput.value && phoneNumberInput.value.trim()) ||
+    phoneNumberInput
+
+  if (nickname && number) {
+    canvas.style.display = 'block'
+    startGameButton.style.display = 'none'
+    logOutButton.style.display = 'none'
+    gameRunning = true
+    flyerY = canvas.height / 2
+    gameLoop()
+    return
+  }
+
   if (!userNickname) {
     alert('Please enter your nickname!')
     return
   }
+  if (!userNumber) {
+    alert('Please enter your number!')
+    return
+  } else if (userNumber.length !== 9 || userNumber[0] !== '5') {
+    alert('Please enter valid number!')
+    return
+  }
 
-  // Fetch the latest leaderboard
-  await fetchLeaderboard()
-
-  document.getElementById('nicknameContainer').style.display = 'none'
-  canvas.style.display = 'block'
-  gameRunning = true
-  flyerY = canvas.height / 2
-  gameLoop()
+  addUser(userNickname, userNumber)
+    .then(() => {
+      localStorage.setItem('nickname', userNickname)
+      localStorage.setItem('number', userNumber)
+      startGameButton.style.display = 'none'
+      document.getElementById('nicknameContainer').style.display = 'none'
+      canvas.style.display = 'block'
+      gameRunning = true
+      flyerY = canvas.height / 2
+      gameLoop()
+    })
+    .catch((err) => {
+      alert(err)
+    })
 })
 
 // Restart Button
@@ -125,14 +199,14 @@ restartButton.addEventListener('click', () => {
 // Canvas touch controls
 canvas.addEventListener('touchstart', () => {
   if (gameRunning) {
-    velocity += lift
+    velocity = lift
   }
 })
 
 // Keyboard controls
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && gameRunning) {
-    velocity += lift
+    velocity = lift
   }
 })
 
@@ -226,15 +300,14 @@ function checkCollision() {
 }
 
 // Game Over
-function gameOver() {
+async function gameOver() {
   gameRunning = false
   restartButton.style.display = 'block'
   cancelAnimationFrame(gameLoop)
 
-  // Post the user's highscore to the backend
-  updateUserHighscore(userNickname, highScore)
+  localStorage.setItem('highscore', highScore)
+  await updateUserHighscore(userNickname, highScore)
 
-  // Fetch the updated leaderboard
   fetchLeaderboard()
 
   score = 0
@@ -257,6 +330,8 @@ function drawLeaderboard() {
   leaderboardToShow.forEach((entry, index) => {
     const nickname = entry.nickname || 'Unknown' // Fallback for missing nickname
     const highscore = entry.highscore || 0 // Fallback for missing highscore
+    ctx.fillStyle = '#00FF00'
+
     ctx.fillText(
       `${index + 1}. ${nickname} - ${highscore}`,
       canvas.width - 150,
@@ -268,8 +343,9 @@ function drawLeaderboard() {
   if (currentUser && !leaderboardToShow.includes(currentUser)) {
     const nickname = currentUser.nickname || 'Unknown'
     const highscore = currentUser.highscore || 0
+    ctx.fillStyle = '#00FF00'
     ctx.fillText(
-      `${leaderboard.indexOf(currentUser) + 1}. ${nickname} - ${highscore}`,
+      `${leaderboard.indexOf(currentUser) + 1}. ${nickname} - ${highscore} ss`,
       canvas.width - 150,
       50 + fontSize * 3
     )
