@@ -1,0 +1,70 @@
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: url('./img/background-clouds.png') no-repeat center center;
+  background-size: cover;
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  color: #ffffff;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: calc(1.5rem + 1vw); /* Responsive font size */
+}
+
+canvas {
+  background-color: #1d3557;
+  border: 2px solid #ffffff;
+  width: 100%;
+  max-width: 800px; /* Maximum width for desktop */
+  height: auto; /* Maintain aspect ratio */
+  display: none;
+}
+
+#nicknameContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+#nicknameInput {
+  padding: 10px;
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+
+button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: calc(1rem + 0.5vw); /* Responsive font size */
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+#leaderboardContainer {
+  margin-top: 20px;
+  text-align: center;
+  color: #fff;
+}
+
+#leaderboard {
+  list-style: none;
+  padding: 0;
+}
+
+#leaderboard li {
+  font-size: 1.2rem;
+  margin: 5px 0;
+}
