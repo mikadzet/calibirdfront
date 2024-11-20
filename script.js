@@ -6,7 +6,7 @@ var phoneNumberInput = document.getElementById('phoneNumberInput')
 const logOutButton = document.getElementById('logOutButton')
 const startGameButton = document.getElementById('startGameButton')
 const nicknameText = document.getElementById('nicknameText')
-const API_URL = 'http://localhost:5000'
+const API_URL = 'https://caligenadmin-59e2454701e5.herokuapp.com'
 
 const maxCanvasWidth = 800
 const maxCanvasHeight = 600
