@@ -124,6 +124,9 @@ async function updateUserHighscore(nickname, highscore) {
     console.error('Failed to update highscore:', error)
   }
 }
+document.addEventListener('gesturestart', (e) => {
+  e.preventDefault()
+})
 
 document.addEventListener('DOMContentLoaded', () => {
   let nicknameContainer = document.getElementById('nicknameContainer')
@@ -315,12 +318,25 @@ restartButton.addEventListener('click', () => {
 })
 
 // Canvas touch controls
-canvas.addEventListener('touchstart', () => {
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault() // Prevent zoom or scroll
   if (gameRunning) {
+    tapSound.currentTime = 0 // Reset the sound
+    tapSound.play()
     velocity = lift
-    tapSound.play() // Play the tap sound effect
   }
 })
+
+// Prevent double-tap zoom
+canvas.addEventListener(
+  'touchstart',
+  (e) => {
+    if (e.touches.length > 1) {
+      e.preventDefault() // Prevent multi-touch zoom
+    }
+  },
+  { passive: false }
+)
 
 // Keyboard controls
 document.addEventListener('keydown', (e) => {
@@ -328,6 +344,9 @@ document.addEventListener('keydown', (e) => {
     velocity = lift
     tapSound.play() // Play the tap sound effect
   }
+})
+document.addEventListener('dblclick', (e) => {
+  e.preventDefault() // Prevent double-tap zoom
 })
 
 // Create obstacles
