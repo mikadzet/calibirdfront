@@ -6,6 +6,7 @@ var phoneNumberInput = document.getElementById('phoneNumberInput')
 const logOutButton = document.getElementById('logOutButton')
 const startGameButton = document.getElementById('startGameButton')
 const nicknameText = document.getElementById('nicknameText')
+const muteButton = document.getElementById('muteButton') // Mute button
 const API_URL = 'https://caligenadmin-59e2454701e5.herokuapp.com'
 
 const maxCanvasWidth = 800
@@ -58,6 +59,21 @@ const loadedObstacleImages = obstacleImages.map((src) => {
 
 let userNickname = ''
 let leaderboard = []
+
+// Background Music Setup
+const backgroundMusic = new Audio('./audio/background.mp3')
+backgroundMusic.loop = true // Enable looping for continuous playback
+backgroundMusic.volume = 0.05 // Set initial volume
+
+// Tap Sound Setup
+const tapSound = new Audio('./audio/tap.wav')
+tapSound.volume = 1 // Adjust the volume if needed
+const gameOverSound = new Audio('./audio/gameover.wav') // Game over sound
+const countdownSound = new Audio('./audio/countdown.wav') // Countdown sound
+
+let countdownRunning = false // Prevent multiple countdowns
+
+let isMuted = false // Mute state
 
 // Fetch leaderboard from the backend
 async function fetchLeaderboard() {
@@ -133,8 +149,81 @@ logOutButton.addEventListener('click', async () => {
   localStorage.removeItem('highscore')
   location.reload()
 })
+function startCountdown(callback) {
+  let countdown = 3 // Start at 3
+  countdownRunning = true
+
+  const drawCountdown = () => {
+    // Clear only the countdown text area
+    ctx.clearRect(0, canvas.height / 4, canvas.width, canvas.height / 2)
+
+    // Draw the background (static during countdown)
+    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height)
+
+    // Draw obstacles (static positions during countdown)
+    obstacles.forEach((obstacle) => {
+      // Draw the top obstacle (aligned correctly at the top and flipped upside down)
+      ctx.save()
+      ctx.translate(obstacle.x, 0)
+      ctx.scale(1, -1)
+      ctx.drawImage(
+        obstacle.image,
+        0,
+        -obstacle.top,
+        obstacleWidth,
+        obstacle.top
+      )
+      ctx.restore()
+
+      // Draw the bottom obstacle normally
+      ctx.drawImage(
+        obstacle.image,
+        obstacle.x,
+        obstacle.bottom,
+        obstacleWidth,
+        canvas.height - obstacle.bottom
+      )
+    })
+
+    // Draw the flyer (static position during countdown)
+    ctx.drawImage(flyerImage, flyerX - 25, flyerY - 25, 50, 50)
+
+    // Redraw the leaderboard
+    drawLeaderboard()
+
+    // Redraw the score
+    drawScore()
+
+    // Draw countdown text
+    ctx.fillStyle = '#ffffff' // Set text color
+    ctx.font = `${canvas.height / 6}px Arial` // Set font size
+    ctx.textAlign = 'center' // Center the text
+    ctx.fillText(
+      countdown > 0 ? countdown : 'GO!',
+      canvas.width / 2,
+      canvas.height / 2
+    )
+  }
+
+  drawCountdown() // Draw the first countdown number immediately
+  countdownSound.play() // Play countdown sound effect
+
+  const countdownInterval = setInterval(() => {
+    countdown--
+
+    if (countdown >= 0) {
+      drawCountdown() // Update countdown
+    } else {
+      clearInterval(countdownInterval) // Stop the countdown
+      countdownRunning = false
+      callback() // Start the game
+    }
+  }, 800) // Update every second
+}
 
 startGameButton.addEventListener('click', async () => {
+  console.log(123123)
+
   const nickname = localStorage.getItem('nickname')
   const number = localStorage.getItem('number')
   nicknameText.style.display = 'none'
@@ -150,9 +239,15 @@ startGameButton.addEventListener('click', async () => {
     canvas.style.display = 'block'
     startGameButton.style.display = 'none'
     logOutButton.style.display = 'none'
-    gameRunning = true
-    flyerY = canvas.height / 2
-    gameLoop()
+
+    if (!countdownRunning) {
+      startCountdown(() => {
+        if (!isMuted) backgroundMusic.play() // Start background music
+        gameRunning = true
+        flyerY = canvas.height / 2
+        gameLoop()
+      })
+    }
     return
   }
 
@@ -175,13 +270,31 @@ startGameButton.addEventListener('click', async () => {
       startGameButton.style.display = 'none'
       document.getElementById('nicknameContainer').style.display = 'none'
       canvas.style.display = 'block'
-      gameRunning = true
-      flyerY = canvas.height / 2
-      gameLoop()
+
+      if (!countdownRunning) {
+        startCountdown(() => {
+          if (!isMuted) backgroundMusic.play() // Start background music
+          gameRunning = true
+          flyerY = canvas.height / 2
+          gameLoop()
+        })
+      }
     })
     .catch((err) => {
       alert(err)
     })
+})
+
+// Mute/Unmute Background Music
+muteButton.addEventListener('click', () => {
+  if (isMuted) {
+    backgroundMusic.play()
+    muteButton.innerText = '🔊' // Update button text
+  } else {
+    backgroundMusic.pause()
+    muteButton.innerText = '🔇' // Update button text
+  }
+  isMuted = !isMuted // Toggle mute state
 })
 
 // Restart Button
@@ -193,6 +306,8 @@ restartButton.addEventListener('click', () => {
   restartButton.style.display = 'none'
   gameRunning = true
   score = 0
+  backgroundMusic.currentTime = 0 // Reset music to the beginning
+  backgroundMusic.play()
   gameLoop()
 })
 
@@ -200,6 +315,7 @@ restartButton.addEventListener('click', () => {
 canvas.addEventListener('touchstart', () => {
   if (gameRunning) {
     velocity = lift
+    tapSound.play() // Play the tap sound effect
   }
 })
 
@@ -207,6 +323,7 @@ canvas.addEventListener('touchstart', () => {
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && gameRunning) {
     velocity = lift
+    tapSound.play() // Play the tap sound effect
   }
 })
 
@@ -229,23 +346,30 @@ function createObstacle() {
 
 // Update obstacles
 function updateObstacles() {
-  obstacles.forEach((obstacle, index) => {
-    obstacle.x -= obstacleSpeed
-
-    if (obstacle.x + obstacleWidth < 0) {
-      obstacles.splice(index, 1)
-      score++
+  obstacles = obstacles.filter((obstacle) => {
+    if (obstacle.x + obstacleWidth > 0) {
+      return true // Keep obstacle if it's on screen
+    } else {
+      score++ // Increment score when an obstacle moves off-screen
       if (score > highScore) {
-        highScore = score
+        highScore = score // Update high score
       }
+      return false // Remove obstacle from array
     }
+  })
 
+  // Move and draw obstacles
+  obstacles.forEach((obstacle) => {
+    obstacle.x -= obstacleSpeed // Move obstacle to the left
+
+    // Draw the top obstacle (aligned correctly at the top and flipped upside down)
     ctx.save()
     ctx.translate(obstacle.x, 0)
     ctx.scale(1, -1)
     ctx.drawImage(obstacle.image, 0, -obstacle.top, obstacleWidth, obstacle.top)
     ctx.restore()
 
+    // Draw the bottom obstacle normally
     ctx.drawImage(
       obstacle.image,
       obstacle.x,
@@ -255,6 +379,7 @@ function updateObstacles() {
     )
   })
 
+  // Create a new obstacle every 120 frames
   if (frameCount % 120 === 0) {
     createObstacle()
   }
@@ -305,6 +430,10 @@ async function gameOver() {
   restartButton.style.display = 'block'
   cancelAnimationFrame(gameLoop)
 
+  backgroundMusic.pause()
+  gameOverSound.currentTime = 0 // Reset the sound
+  gameOverSound.play()
+
   localStorage.setItem('highscore', highScore)
   await updateUserHighscore(userNickname, highScore)
 
@@ -319,22 +448,25 @@ function drawLeaderboard() {
   const currentUser = leaderboard.find(
     (entry) => entry.nickname === userNickname
   )
-  const fontSize = canvas.height / 30
+  const fontSize = canvas.height / 30 // Dynamic font size based on canvas height
+  const paddingRight = 20 // Padding from the right edge
 
-  ctx.fillStyle = '#ffffff'
-  ctx.font = `${fontSize}px Arial`
+  ctx.fillStyle = '#ffffff' // Leaderboard title color
+  ctx.font = `${fontSize}px Arial` // Dynamic font size
+  ctx.textAlign = 'right' // Align text to the right
 
-  ctx.fillText('Leaderboard', canvas.width - 150, 30)
+  // Render "Leaderboard" title
+  ctx.fillText('Leaderboard', canvas.width - paddingRight, 30)
 
   // Render the top 3 players
   leaderboardToShow.forEach((entry, index) => {
-    const nickname = entry.nickname || 'Unknown' // Fallback for missing nickname
-    const highscore = entry.highscore || 0 // Fallback for missing highscore
-    ctx.fillStyle = '#00FF00'
+    const nickname = entry.nickname || 'Unknown' // Default for missing nickname
+    const highscore = entry.highscore || 0 // Default for missing highscore
+    ctx.fillStyle = '#00FF00' // Color for leaderboard entries
 
     ctx.fillText(
       `${index + 1}. ${nickname} - ${highscore}`,
-      canvas.width - 150,
+      canvas.width - paddingRight,
       50 + fontSize * index
     )
   })
@@ -343,10 +475,10 @@ function drawLeaderboard() {
   if (currentUser && !leaderboardToShow.includes(currentUser)) {
     const nickname = currentUser.nickname || 'Unknown'
     const highscore = currentUser.highscore || 0
-    ctx.fillStyle = '#00FF00'
+    ctx.fillStyle = '#FFD700' // Highlight current user (gold color)
     ctx.fillText(
-      `${leaderboard.indexOf(currentUser) + 1}. ${nickname} - ${highscore} ss`,
-      canvas.width - 150,
+      `${leaderboard.indexOf(currentUser) + 1}. ${nickname} - ${highscore}`,
+      canvas.width - paddingRight,
       50 + fontSize * 3
     )
   }
@@ -356,6 +488,8 @@ function drawLeaderboard() {
 function drawScore() {
   ctx.fillStyle = '#ffffff'
   ctx.font = `${canvas.height / 30}px Arial`
+  ctx.textAlign = 'left'
+
   ctx.fillText(`Score: ${score}`, 20, 30)
   ctx.fillText(`High Score: ${highScore}`, 20, 60)
 }

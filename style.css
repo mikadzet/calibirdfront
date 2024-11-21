@@ -22,7 +22,7 @@ canvas {
   border: 2px solid #ffffff;
   width: 100%;
   max-width: 800px; /* Maximum width for desktop */
-  height: auto; /* Maintain aspect ratio */
+  max-height: 80%;
   display: none;
 }
 
@@ -53,6 +53,23 @@ button {
 button:hover {
   background-color: #45a049;
 }
+#muteButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 100;
+}
+
+#muteButton:hover {
+  background-color: #45a049;
+}
 
 #leaderboardContainer {
   margin-top: 20px;
@@ -68,4 +85,9 @@ button:hover {
 #leaderboard li {
   font-size: 1.2rem;
   margin: 5px 0;
+}
+
+#restartButton {
+  position: absolute;
+  top: 50%;
 }
