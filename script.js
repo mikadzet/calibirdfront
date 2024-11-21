@@ -64,7 +64,7 @@ let leaderboard = []
 const backgroundMusic = new Audio('./audio/background.mp3')
 backgroundMusic.loop = true // Enable looping for continuous playback
 backgroundMusic.volume = 0.05 // Set initial volume
-
+let backgroundMusicIsMuted = false
 // Tap Sound Setup
 const tapSound = new Audio('./audio/tap.wav')
 tapSound.volume = 1 // Adjust the volume if needed
@@ -288,10 +288,11 @@ startGameButton.addEventListener('click', async () => {
 // Mute/Unmute Background Music
 muteButton.addEventListener('click', () => {
   if (isMuted) {
-    backgroundMusic.play()
+    if (gameRunning) backgroundMusic.play()
     muteButton.innerText = '🔊' // Update button text
   } else {
     backgroundMusic.pause()
+    backgroundMusicIsMuted = true
     muteButton.innerText = '🔇' // Update button text
   }
   isMuted = !isMuted // Toggle mute state
@@ -306,8 +307,10 @@ restartButton.addEventListener('click', () => {
   restartButton.style.display = 'none'
   gameRunning = true
   score = 0
-  backgroundMusic.currentTime = 0 // Reset music to the beginning
-  backgroundMusic.play()
+  if (!backgroundMusicIsMuted) {
+    backgroundMusic.currentTime = 0
+    backgroundMusic.play()
+  }
   gameLoop()
 })
 
@@ -522,7 +525,7 @@ function gameLoop() {
   updateObstacles()
   checkCollision()
   drawScore()
-  drawLeaderboard() // Render the leaderboard on the canvas
+  drawLeaderboard()
 
   frameCount++
   requestAnimationFrame(gameLoop)
