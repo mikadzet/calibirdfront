@@ -20,8 +20,8 @@ h1 {
 canvas {
   background-color: #1d3557;
   border: 2px solid #ffffff;
-  width: 100%;
-  max-width: 800px; /* Maximum width for desktop */
+  width: 800px;
+  max-width: 80%; /* Maximum width for desktop */
   max-height: 80%;
   display: none;
 }
