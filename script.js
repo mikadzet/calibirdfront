@@ -133,6 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let nickname = localStorage.getItem('nickname')
   let number = localStorage.getItem('number')
 
+  // Adjust volume for iPhone users
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    backgroundMusic.volume = 0.03 // Lower volume for iPhone
+  }
+
   if (nickname && number) {
     nicknameText.innerText = nickname
     nicknameText.style.textShadow = '0 0 4px black'
@@ -225,8 +230,6 @@ function startCountdown(callback) {
 }
 
 startGameButton.addEventListener('click', async () => {
-  console.log(123123)
-
   const nickname = localStorage.getItem('nickname')
   const number = localStorage.getItem('number')
   nicknameText.style.display = 'none'
@@ -245,7 +248,10 @@ startGameButton.addEventListener('click', async () => {
 
     if (!countdownRunning) {
       startCountdown(() => {
-        if (!isMuted) backgroundMusic.play() // Start background music
+        if (!isMuted) {
+          backgroundMusic.currentTime = 0 // Reset the music
+          backgroundMusic.play().catch(() => {}) // Ensure playback starts
+        }
         gameRunning = true
         flyerY = canvas.height / 2
         gameLoop()
@@ -276,7 +282,10 @@ startGameButton.addEventListener('click', async () => {
 
       if (!countdownRunning) {
         startCountdown(() => {
-          if (!isMuted) backgroundMusic.play() // Start background music
+          if (!isMuted) {
+            backgroundMusic.currentTime = 0 // Reset the music
+            backgroundMusic.play().catch(() => {}) // Ensure playback starts
+          }
           gameRunning = true
           flyerY = canvas.height / 2
           gameLoop()
@@ -289,16 +298,17 @@ startGameButton.addEventListener('click', async () => {
 })
 
 // Mute/Unmute Background Music
+// Mute/Unmute Background Music
 muteButton.addEventListener('click', () => {
-  if (isMuted) {
-    if (gameRunning) backgroundMusic.play()
-    muteButton.innerText = '🔊' // Update button text
-  } else {
-    backgroundMusic.pause()
-    backgroundMusicIsMuted = true
-    muteButton.innerText = '🔇' // Update button text
-  }
   isMuted = !isMuted // Toggle mute state
+
+  if (isMuted) {
+    backgroundMusic.pause() // Pause the music
+    muteButton.innerText = '🔇' // Update button text
+  } else {
+    backgroundMusic.play().catch(() => {}) // Resume music from the current position
+    muteButton.innerText = '🔊' // Update button text
+  }
 })
 
 // Restart Button
@@ -317,12 +327,20 @@ restartButton.addEventListener('click', () => {
   gameLoop()
 })
 
+const tapSoundPool = Array.from(
+  { length: 5 },
+  () => new Audio('./audio/tap.wav')
+)
+let tapSoundIndex = 0
+
 // Canvas touch controls
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault() // Prevent zoom or scroll
   if (gameRunning) {
-    tapSound.currentTime = 0 // Reset playback position
-    tapSound.play().catch(() => {}) // Play the sound
+    const currentSound = tapSoundPool[tapSoundIndex]
+    currentSound.currentTime = 0 // Reset playback position
+    currentSound.play().catch(() => {}) // Play the sound
+    tapSoundIndex = (tapSoundIndex + 1) % tapSoundPool.length // Cycle to the next sound
     velocity = lift
   }
 })
@@ -340,8 +358,10 @@ canvas.addEventListener(
 // Keyboard controls
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && gameRunning) {
-    tapSound.currentTime = 0 // Reset playback position
-    tapSound.play().catch(() => {}) // Play the sound
+    const currentSound = tapSoundPool[tapSoundIndex]
+    currentSound.currentTime = 0 // Reset playback position
+    currentSound.play().catch(() => {}) // Play the sound
+    tapSoundIndex = (tapSoundIndex + 1) % tapSoundPool.length // Cycle to the next sound
     velocity = lift
   }
 })
