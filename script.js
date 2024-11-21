@@ -23,7 +23,7 @@ let velocity = 0
 const maxFallSpeed = 10
 let frameCount = 0
 let gameRunning = false
-
+let tapCooldown = false // Optional cooldown flag
 let score = 0
 let highScore = Number(localStorage.getItem('highscore')) || 0
 
@@ -321,12 +321,11 @@ restartButton.addEventListener('click', () => {
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault() // Prevent zoom or scroll
   if (gameRunning) {
-    tapSound.currentTime = 0 // Reset the sound
-    tapSound.play()
+    tapSound.currentTime = 0 // Reset playback position
+    tapSound.play().catch(() => {}) // Play the sound
     velocity = lift
   }
 })
-
 // Prevent double-tap zoom
 canvas.addEventListener(
   'touchstart',
@@ -341,8 +340,9 @@ canvas.addEventListener(
 // Keyboard controls
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && gameRunning) {
+    tapSound.currentTime = 0 // Reset playback position
+    tapSound.play().catch(() => {}) // Play the sound
     velocity = lift
-    tapSound.play() // Play the tap sound effect
   }
 })
 document.addEventListener('dblclick', (e) => {
