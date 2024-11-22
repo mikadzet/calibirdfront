@@ -320,10 +320,14 @@ restartButton.addEventListener('click', () => {
   restartButton.style.display = 'none'
   gameRunning = true
   score = 0
+
   if (!backgroundMusicIsMuted) {
-    backgroundMusic.currentTime = 0
-    backgroundMusic.play()
+    // Resume background music without restarting
+    if (backgroundMusic.paused) {
+      backgroundMusic.play()
+    }
   }
+
   gameLoop()
 })
 
@@ -472,8 +476,10 @@ async function gameOver() {
   restartButton.style.display = 'block'
   cancelAnimationFrame(gameLoop)
 
+  // Pause the background music, but don't reset the currentTime
   backgroundMusic.pause()
-  gameOverSound.currentTime = 0 // Reset the sound
+
+  gameOverSound.currentTime = 0 // Reset game over sound
   gameOverSound.play()
 
   localStorage.setItem('highscore', highScore)
