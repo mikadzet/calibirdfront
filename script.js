@@ -30,10 +30,10 @@ let highScore = Number(localStorage.getItem('highscore')) || 0
 let obstacles = []
 const minObstacleWidth = 50
 const obstacleWidth = Math.max(canvas.width / 16, minObstacleWidth)
-const obstacleGap = canvas.height / 4
-const obstacleSpeed = canvas.width / 200
+const obstacleGap = canvas.height / 4.5
+let obstacleSpeed = canvas.width / 200
 
-const minObstacleHeight = canvas.height / 8
+const minObstacleHeight = obstacleWidth * 3.8
 const maxObstacleHeight = canvas.height / 2
 
 const backgroundImage = new Image()
@@ -60,6 +60,9 @@ const loadedObstacleImages = obstacleImages.map((src) => {
 let userNickname = ''
 let leaderboard = []
 
+setInterval(() => {
+  obstacleSpeed += 0.3
+}, 3000)
 // Background Music Setup
 const backgroundMusic = new Audio('./audio/background.mp3')
 backgroundMusic.loop = true // Enable looping for continuous playback
