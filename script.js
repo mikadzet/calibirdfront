@@ -64,7 +64,6 @@ let leaderboard = []
 const backgroundMusic = new Audio('./audio/background.mp3')
 backgroundMusic.loop = true // Enable looping for continuous playback
 backgroundMusic.volume = 0.05 // Set initial volume
-let backgroundMusicIsMuted = false
 // Tap Sound Setup
 const tapSound = new Audio('./audio/tap.wav')
 tapSound.volume = 1 // Adjust the volume if needed
@@ -321,7 +320,7 @@ restartButton.addEventListener('click', () => {
   gameRunning = true
   score = 0
 
-  if (!backgroundMusicIsMuted) {
+  if (!isMuted) {
     // Resume background music without restarting
     if (backgroundMusic.paused) {
       backgroundMusic.play()
@@ -341,13 +340,12 @@ let tapSoundIndex = 0
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault() // Prevent zoom or scroll
   if (gameRunning) {
-    const currentSound = tapSoundPool[tapSoundIndex]
-    currentSound.currentTime = 0 // Reset playback position
-    currentSound.play().catch(() => {}) // Play the sound
-    tapSoundIndex = (tapSoundIndex + 1) % tapSoundPool.length // Cycle to the next sound
+    tapSound.currentTime = 0
+    tapSound.play().catch(() => {})
     velocity = lift
   }
 })
+
 // Prevent double-tap zoom
 canvas.addEventListener(
   'touchstart',
