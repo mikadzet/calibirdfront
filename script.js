@@ -23,7 +23,6 @@ let velocity = 0
 const maxFallSpeed = 10
 let frameCount = 0
 let gameRunning = false
-let tapCooldown = false // Optional cooldown flag
 let score = 0
 let highScore = Number(localStorage.getItem('highscore')) || 0
 
@@ -33,13 +32,14 @@ const obstacleWidth = Math.max(canvas.width / 16, minObstacleWidth)
 const obstacleGap = canvas.height / 4.5
 let obstacleSpeed = canvas.width / 200
 
-const minObstacleHeight = obstacleWidth * 3.8
+const minObstacleHeight = canvas.height / 16
 const maxObstacleHeight = canvas.height / 2
 
 const backgroundImage = new Image()
 backgroundImage.src = './img/background-clouds.png'
 let backgroundX = 0
 let backgroundSpeed = canvas.width / 300
+let obstacleCreationInterval = 90 // Initial interval for obstacle creation
 
 const flyerImage = new Image()
 flyerImage.src = './img/flyer.png'
@@ -62,20 +62,33 @@ let leaderboard = []
 
 setInterval(() => {
   obstacleSpeed += 0.3
+  obstacleCreationInterval = Math.max(30, 90 - Math.floor(obstacleSpeed * 5))
 }, 3000)
+
 // Background Music Setup
 const backgroundMusic = new Audio('./audio/background.mp3')
 backgroundMusic.loop = true // Enable looping for continuous playback
 backgroundMusic.volume = 0.05 // Set initial volume
-// Tap Sound Setup
-const tapSound = new Audio('./audio/tap.wav')
-tapSound.volume = 1 // Adjust the volume if needed
 const gameOverSound = new Audio('./audio/gameover.wav') // Game over sound
 const countdownSound = new Audio('./audio/countdown.wav') // Countdown sound
-
+let scoreText
+let recordText
+let leaderBoardText
 let countdownRunning = false // Prevent multiple countdowns
 
 let isMuted = false // Mute state
+
+document.fonts.load('10px "firago"').then(() => {
+  ctx.font = "40px 'firago', sans-serif"
+
+  const scoreTextLowerCase = 'ქულა'
+  const recordTextLowerCase = 'რეკორდი'
+  const leaderBoardTextLowerCase = 'ლიდერბორდი'
+
+  scoreText = scoreTextLowerCase.toUpperCase()
+  recordText = recordTextLowerCase.toUpperCase()
+  leaderBoardText = leaderBoardTextLowerCase.toUpperCase()
+})
 
 // Fetch leaderboard from the backend
 async function fetchLeaderboard() {
@@ -126,6 +139,7 @@ async function updateUserHighscore(nickname, highscore) {
     console.error('Failed to update highscore:', error)
   }
 }
+
 document.addEventListener('gesturestart', (e) => {
   e.preventDefault()
 })
@@ -159,6 +173,7 @@ logOutButton.addEventListener('click', async () => {
   localStorage.removeItem('highscore')
   location.reload()
 })
+
 function startCountdown(callback) {
   let countdown = 3 // Start at 3
   countdownRunning = true
@@ -263,14 +278,14 @@ startGameButton.addEventListener('click', async () => {
   }
 
   if (!userNickname) {
-    alert('Please enter your nickname!')
+    alert('შეიყვანეთ სახელი!')
     return
   }
   if (!userNumber) {
-    alert('Please enter your number!')
+    alert('შეიყვანეთ ნომერი!')
     return
   } else if (userNumber.length !== 9 || userNumber[0] !== '5') {
-    alert('Please enter valid number!')
+    alert('შეიყვანეთ სწორი ნომერი!')
     return
   }
 
@@ -299,7 +314,6 @@ startGameButton.addEventListener('click', async () => {
     })
 })
 
-// Mute/Unmute Background Music
 // Mute/Unmute Background Music
 muteButton.addEventListener('click', () => {
   isMuted = !isMuted // Toggle mute state
@@ -333,22 +347,6 @@ restartButton.addEventListener('click', () => {
   gameLoop()
 })
 
-const tapSoundPool = Array.from(
-  { length: 5 },
-  () => new Audio('./audio/tap.wav')
-)
-let tapSoundIndex = 0
-
-// Canvas touch controls
-canvas.addEventListener('touchstart', (e) => {
-  e.preventDefault() // Prevent zoom or scroll
-  if (gameRunning) {
-    tapSound.currentTime = 0
-    tapSound.play().catch(() => {})
-    velocity = lift
-  }
-})
-
 // Prevent double-tap zoom
 canvas.addEventListener(
   'touchstart',
@@ -363,10 +361,6 @@ canvas.addEventListener(
 // Keyboard controls
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && gameRunning) {
-    const currentSound = tapSoundPool[tapSoundIndex]
-    currentSound.currentTime = 0 // Reset playback position
-    currentSound.play().catch(() => {}) // Play the sound
-    tapSoundIndex = (tapSoundIndex + 1) % tapSoundPool.length // Cycle to the next sound
     velocity = lift
   }
 })
@@ -411,23 +405,37 @@ function updateObstacles() {
 
     // Draw the top obstacle (aligned correctly at the top and flipped upside down)
     ctx.save()
-    ctx.translate(obstacle.x, 0)
-    ctx.scale(1, -1)
-    ctx.drawImage(obstacle.image, 0, -obstacle.top, obstacleWidth, obstacle.top)
+    ctx.translate(obstacle.x + obstacleWidth / 2, -obstacle.top / 2) // Move origin to the center of the obstacle
+    ctx.scale(1, 1) // Flip horizontally
+    ctx.drawImage(
+      obstacle.image,
+      -obstacleWidth / 2, // Adjust X to align with the new origin
+      obstacle.top / 2, // Adjust Y for alignment
+      obstacleWidth,
+      obstacle.top
+    )
     ctx.restore()
 
     // Draw the bottom obstacle normally
+
+    ctx.save()
+    ctx.translate(
+      obstacle.x + obstacleWidth / 2,
+      obstacle.bottom + (canvas.height - obstacle.bottom) / 2
+    ) // Move origin to the center of the bottom obstacle
+    ctx.scale(-1, -1) // Flip horizontally and vertically
     ctx.drawImage(
       obstacle.image,
-      obstacle.x,
-      obstacle.bottom,
+      -obstacleWidth / 2, // Adjust X to align with the new origin
+      -(canvas.height - obstacle.bottom) / 2, // Adjust Y for alignment
       obstacleWidth,
       canvas.height - obstacle.bottom
     )
+    ctx.restore()
   })
 
   // Create a new obstacle every 120 frames
-  if (frameCount % 120 === 0) {
+  if (frameCount % obstacleCreationInterval === 0) {
     createObstacle()
   }
 }
@@ -482,6 +490,7 @@ async function gameOver() {
 
   gameOverSound.currentTime = 0 // Reset game over sound
   gameOverSound.play()
+  obstacleSpeed = canvas.width / 200
 
   localStorage.setItem('highscore', highScore)
   await updateUserHighscore(userNickname, highScore)
@@ -505,7 +514,7 @@ function drawLeaderboard() {
   ctx.textAlign = 'right' // Align text to the right
 
   // Render "Leaderboard" title
-  ctx.fillText('Leaderboard', canvas.width - paddingRight, 30)
+  ctx.fillText(leaderBoardText, canvas.width - paddingRight, 30)
 
   // Render the top 3 players
   leaderboardToShow.forEach((entry, index) => {
@@ -539,8 +548,8 @@ function drawScore() {
   ctx.font = `${canvas.height / 30}px Arial`
   ctx.textAlign = 'left'
 
-  ctx.fillText(`Score: ${score}`, 20, 30)
-  ctx.fillText(`High Score: ${highScore}`, 20, 60)
+  ctx.fillText(`${scoreText}: ${score}`, 20, 30)
+  ctx.fillText(`${recordText}: ${highScore}`, 20, 60)
 }
 
 // Main game loop
@@ -556,7 +565,7 @@ function gameLoop() {
   ctx.drawImage(backgroundImage, backgroundX, 0, canvas.width, canvas.height)
   ctx.drawImage(
     backgroundImage,
-    backgroundX + canvas.width,
+    backgroundX + canvas.width - 1,
     0,
     canvas.width,
     canvas.height

@@ -1,3 +1,7 @@
+@font-face {
+  font-family: 'firago';
+  src: url('./font/alk-rounded-mtav-med-webfont.ttf');
+}
 body {
   margin: 0;
   display: flex;
@@ -25,7 +29,10 @@ canvas {
   max-height: 80%;
   display: none;
 }
-
+#nicknameText {
+  font-family: 'firago', sans-serif;
+  text-transform: uppercase;
+}
 #nicknameContainer {
   display: flex;
   flex-direction: column;
@@ -41,9 +48,12 @@ canvas {
 }
 
 button {
+  border-radius: 12px;
+  border: 2px solid white;
   background-color: #4caf50;
+  font-family: 'firago', sans-serif;
+  text-transform: uppercase;
   color: white;
-  border: none;
   padding: 10px 20px;
   font-size: calc(1rem + 0.5vw); /* Responsive font size */
   cursor: pointer;
