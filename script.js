@@ -31,6 +31,7 @@ const minObstacleWidth = 50
 const obstacleWidth = Math.max(canvas.width / 16, minObstacleWidth)
 const obstacleGap = canvas.height / 4.5
 let obstacleSpeed = canvas.width / 200
+let maxObstacleSpeed = 16
 
 const minObstacleHeight = canvas.height / 16
 const maxObstacleHeight = canvas.height / 2
@@ -40,6 +41,7 @@ backgroundImage.src = './img/background-clouds.png'
 let backgroundX = 0
 let backgroundSpeed = canvas.width / 300
 let obstacleCreationInterval = 90 // Initial interval for obstacle creation
+let maxObstacleCreationInterval = 30
 
 const flyerImage = new Image()
 flyerImage.src = './img/flyer.png'
@@ -61,9 +63,18 @@ let userNickname = ''
 let leaderboard = []
 
 setInterval(() => {
-  obstacleSpeed += 0.3
-  obstacleCreationInterval = Math.max(30, 90 - Math.floor(obstacleSpeed * 5))
+  if (obstacleSpeed < maxObstacleSpeed) {
+    obstacleSpeed += 0.3
+  }
 }, 3000)
+
+setInterval(() => {
+  console.log(obstacleCreationInterval)
+
+  if (obstacleCreationInterval > maxObstacleCreationInterval) {
+    obstacleCreationInterval -= 1
+  }
+}, 6000)
 
 // Background Music Setup
 const backgroundMusic = new Audio('./audio/background.mp3')
@@ -250,6 +261,8 @@ startGameButton.addEventListener('click', async () => {
   const nickname = localStorage.getItem('nickname')
   const number = localStorage.getItem('number')
   nicknameText.style.display = 'none'
+  startGameButton.style.display = 'none'
+  logOutButton.style.display = 'none'
 
   await fetchLeaderboard()
   userNickname =
@@ -260,8 +273,6 @@ startGameButton.addEventListener('click', async () => {
 
   if (nickname && number) {
     canvas.style.display = 'block'
-    startGameButton.style.display = 'none'
-    logOutButton.style.display = 'none'
 
     if (!countdownRunning) {
       startCountdown(() => {
@@ -334,6 +345,8 @@ restartButton.addEventListener('click', () => {
   velocity = 0
   frameCount = 0
   restartButton.style.display = 'none'
+  obstacleSpeed = canvas.width / 200
+
   gameRunning = true
   score = 0
 
@@ -354,6 +367,7 @@ canvas.addEventListener(
     if (e.touches.length > 1) {
       e.preventDefault() // Prevent multi-touch zoom
     }
+    velocity = lift
   },
   { passive: false }
 )
@@ -435,7 +449,21 @@ function updateObstacles() {
   })
 
   // Create a new obstacle every 120 frames
-  if (frameCount % obstacleCreationInterval === 0) {
+  if (obstacles.length > 1) {
+    console.log(Math.round(obstacles[1].x), canvas.width / 1.5)
+  }
+
+  if (obstacles.length === 0) {
+    createObstacle()
+  } else if (
+    obstacles.length === 1 &&
+    Math.abs(obstacles[0].x / 2 - canvas.width / 4) <= 3
+  ) {
+    createObstacle()
+  } else if (
+    obstacles.length === 2 &&
+    Math.abs(obstacles[1].x / 2 - canvas.width / 4) <= 3
+  ) {
     createObstacle()
   }
 }
