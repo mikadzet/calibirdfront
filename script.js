@@ -31,7 +31,7 @@ const minObstacleWidth = 50
 const obstacleWidth = Math.max(canvas.width / 16, minObstacleWidth)
 const obstacleGap = canvas.height / 4.5
 let obstacleSpeed = canvas.width / 200
-let maxObstacleSpeed = 16
+let maxObstacleSpeed = 10
 
 const minObstacleHeight = canvas.height / 16
 const maxObstacleHeight = canvas.height / 2
@@ -47,6 +47,12 @@ const flyerImage = new Image()
 flyerImage.src = './img/flyer.png'
 
 const obstacleImages = [
+  './img/obstacle1-top.png',
+  './img/obstacle2-top.png',
+  './img/obstacle3-top.png',
+  './img/obstacle4-top.png',
+]
+const obstacleBotImages = [
   './img/obstacle1.png',
   './img/obstacle2.png',
   './img/obstacle3.png',
@@ -54,6 +60,11 @@ const obstacleImages = [
 ]
 
 const loadedObstacleImages = obstacleImages.map((src) => {
+  const img = new Image()
+  img.src = src
+  return img
+})
+const loadedObstacleBotImages = obstacleBotImages.map((src) => {
   const img = new Image()
   img.src = src
   return img
@@ -222,7 +233,13 @@ function startCountdown(callback) {
     })
 
     // Draw the flyer (static position during countdown)
-    ctx.drawImage(flyerImage, flyerX - 25, flyerY - 25, 50, 50)
+    ctx.drawImage(
+      flyerImage,
+      flyerX - 25,
+      flyerY - 25,
+      canvas.height / 15,
+      canvas.height / 15
+    )
 
     // Redraw the leaderboard
     drawLeaderboard()
@@ -386,15 +403,17 @@ document.addEventListener('dblclick', (e) => {
 function createObstacle() {
   let obstacleHeight =
     Math.random() * (maxObstacleHeight - minObstacleHeight) + minObstacleHeight
-  const randomImage =
-    loadedObstacleImages[
-      Math.floor(Math.random() * loadedObstacleImages.length)
-    ]
+  const randomImageIndex = Math.floor(
+    Math.random() * loadedObstacleImages.length
+  )
+  const randomTopImage = loadedObstacleImages[randomImageIndex]
+  const randomImage = loadedObstacleBotImages[randomImageIndex]
 
   obstacles.push({
     x: canvas.width,
     top: obstacleHeight,
     bottom: obstacleHeight + obstacleGap,
+    topImage: randomTopImage,
     image: randomImage,
   })
 }
@@ -427,7 +446,7 @@ function updateObstacles() {
     ctx.save()
     ctx.translate(obstacle.x, 0) // Top-left corner of the top obstacle
     ctx.drawImage(
-      obstacle.image,
+      obstacle.topImage,
       0,
       obstacle.image.height -
         (topImageHeight / scaledHeight) * obstacle.image.height, // Clip from the bottom
@@ -462,7 +481,17 @@ function updateObstacles() {
   })
 
   // Create a new obstacle every interval
-  if (frameCount % obstacleCreationInterval === 0) {
+  if (obstacles.length === 0) {
+    createObstacle()
+  } else if (
+    obstacles.length === 1 &&
+    Math.abs(obstacles[0].x / 2 - (canvas.width / 4 - obstacleWidth)) <= 3
+  ) {
+    createObstacle()
+  } else if (
+    obstacles.length === 2 &&
+    Math.abs(obstacles[1].x / 2 - (canvas.width / 4 - obstacleWidth)) <= 3
+  ) {
     createObstacle()
   }
 }
@@ -602,7 +631,13 @@ function gameLoop() {
   if (velocity > maxFallSpeed) velocity = maxFallSpeed
   flyerY += velocity
 
-  ctx.drawImage(flyerImage, flyerX - 25, flyerY - 25, 50, 50)
+  ctx.drawImage(
+    flyerImage,
+    flyerX - 25,
+    flyerY - 25,
+    canvas.height / 15,
+    canvas.height / 15
+  )
 
   updateObstacles()
   checkCollision()
