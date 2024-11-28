@@ -422,48 +422,41 @@ function updateObstacles() {
     const scaledWidth = obstacleWidth // Fixed width for the obstacles
     const scaledHeight = scaledWidth / originalAspectRatio // Maintain aspect ratio
 
-    // Draw the top obstacle
-    ctx.strokeStyle = 'red'
-    ctx.strokeRect(obstacle.x, 0, obstacleWidth, obstacle.top)
-    const topHeight = scaledHeight // Use the natural height based on aspect ratio
+    // --- Draw Top Obstacle ---
+    const topImageHeight = Math.min(obstacle.top, scaledHeight) // Image's proportional height
     ctx.save()
-    ctx.translate(obstacle.x + scaledWidth / 2, 0) // Center the top obstacle
-    ctx.scale(1, -1) // Flip vertically for the top obstacle
+    ctx.translate(obstacle.x, 0) // Top-left corner of the top obstacle
     ctx.drawImage(
       obstacle.image,
       0,
-      0,
+      obstacle.image.height -
+        (topImageHeight / scaledHeight) * obstacle.image.height, // Clip from the bottom
       obstacle.image.width,
-      obstacle.image.height, // Source dimensions
-      -scaledWidth / 2, // Adjust X
-      -obstacle.top, // Adjust Y (height of the obstacle)
+      (topImageHeight / scaledHeight) * obstacle.image.height, // Clip height
+      0,
+      0,
       scaledWidth,
-      topHeight // Scaled dimensions
+      topImageHeight // Draw scaled
     )
     ctx.restore()
 
-    // Draw the bottom obstacle
-    ctx.strokeStyle = 'blue'
-    ctx.strokeRect(
-      obstacle.x,
+    // --- Draw Bottom Obstacle ---
+    const bottomImageHeight = Math.min(
       canvas.height - obstacle.bottom,
-      obstacleWidth,
-      obstacle.bottom
-    ) // Bottom obstacle
-    const bottomHeight = scaledHeight // Use the natural height based on aspect ratio
+      scaledHeight
+    ) // Image's proportional height
     ctx.save()
-    ctx.translate(obstacle.x + scaledWidth / 2, canvas.height - obstacle.bottom) // Align bottom obstacle at the bottom of the canvas
-    ctx.scale(1, 1) // No flipping
+    ctx.translate(obstacle.x, obstacle.bottom) // Bottom-left corner of the bottom obstacle
     ctx.drawImage(
       obstacle.image,
       0,
-      0,
+      0, // Clip from the top
       obstacle.image.width,
-      obstacle.image.height, // Source dimensions
-      -scaledWidth / 2, // Adjust X
-      0, // Adjust Y
+      (bottomImageHeight / scaledHeight) * obstacle.image.height, // Clip height
+      0,
+      0,
       scaledWidth,
-      bottomHeight // Scaled dimensions
+      bottomImageHeight // Draw scaled
     )
     ctx.restore()
   })
