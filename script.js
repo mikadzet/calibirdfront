@@ -401,15 +401,16 @@ function createObstacle() {
 
 // Update obstacles
 function updateObstacles() {
+  // Remove obstacles that move off-screen
   obstacles = obstacles.filter((obstacle) => {
     if (obstacle.x + obstacleWidth > 0) {
-      return true // Keep obstacle if it's on screen
+      return true // Keep obstacle
     } else {
       score++ // Increment score when an obstacle moves off-screen
       if (score > highScore) {
         highScore = score // Update high score
       }
-      return false // Remove obstacle from array
+      return false // Remove obstacle
     }
   })
 
@@ -417,53 +418,58 @@ function updateObstacles() {
   obstacles.forEach((obstacle) => {
     obstacle.x -= obstacleSpeed // Move obstacle to the left
 
-    // Draw the top obstacle (aligned correctly at the top and flipped upside down)
+    const originalAspectRatio = obstacle.image.width / obstacle.image.height
+    const scaledWidth = obstacleWidth // Fixed width for the obstacles
+    const scaledHeight = scaledWidth / originalAspectRatio // Maintain aspect ratio
+
+    // Draw the top obstacle
+    ctx.strokeStyle = 'red'
+    ctx.strokeRect(obstacle.x, 0, obstacleWidth, obstacle.top)
+    const topHeight = scaledHeight // Use the natural height based on aspect ratio
     ctx.save()
-    ctx.translate(obstacle.x + obstacleWidth / 2, -obstacle.top / 2) // Move origin to the center of the obstacle
-    ctx.scale(1, 1) // Flip horizontally
+    ctx.translate(obstacle.x + scaledWidth / 2, 0) // Center the top obstacle
+    ctx.scale(1, -1) // Flip vertically for the top obstacle
     ctx.drawImage(
       obstacle.image,
-      -obstacleWidth / 2, // Adjust X to align with the new origin
-      obstacle.top / 2, // Adjust Y for alignment
-      obstacleWidth,
-      obstacle.top
+      0,
+      0,
+      obstacle.image.width,
+      obstacle.image.height, // Source dimensions
+      -scaledWidth / 2, // Adjust X
+      -obstacle.top, // Adjust Y (height of the obstacle)
+      scaledWidth,
+      topHeight // Scaled dimensions
     )
     ctx.restore()
 
-    // Draw the bottom obstacle normally
-
+    // Draw the bottom obstacle
+    ctx.strokeStyle = 'blue'
+    ctx.strokeRect(
+      obstacle.x,
+      canvas.height - obstacle.bottom,
+      obstacleWidth,
+      obstacle.bottom
+    ) // Bottom obstacle
+    const bottomHeight = scaledHeight // Use the natural height based on aspect ratio
     ctx.save()
-    ctx.translate(
-      obstacle.x + obstacleWidth / 2,
-      obstacle.bottom + (canvas.height - obstacle.bottom) / 2
-    ) // Move origin to the center of the bottom obstacle
-    ctx.scale(-1, -1) // Flip horizontally and vertically
+    ctx.translate(obstacle.x + scaledWidth / 2, canvas.height - obstacle.bottom) // Align bottom obstacle at the bottom of the canvas
+    ctx.scale(1, 1) // No flipping
     ctx.drawImage(
       obstacle.image,
-      -obstacleWidth / 2, // Adjust X to align with the new origin
-      -(canvas.height - obstacle.bottom) / 2, // Adjust Y for alignment
-      obstacleWidth,
-      canvas.height - obstacle.bottom
+      0,
+      0,
+      obstacle.image.width,
+      obstacle.image.height, // Source dimensions
+      -scaledWidth / 2, // Adjust X
+      0, // Adjust Y
+      scaledWidth,
+      bottomHeight // Scaled dimensions
     )
     ctx.restore()
   })
 
-  // Create a new obstacle every 120 frames
-  if (obstacles.length > 1) {
-    console.log(Math.round(obstacles[1].x), canvas.width / 1.5)
-  }
-
-  if (obstacles.length === 0) {
-    createObstacle()
-  } else if (
-    obstacles.length === 1 &&
-    Math.abs(obstacles[0].x / 2 - canvas.width / 4) <= 3
-  ) {
-    createObstacle()
-  } else if (
-    obstacles.length === 2 &&
-    Math.abs(obstacles[1].x / 2 - canvas.width / 4) <= 3
-  ) {
+  // Create a new obstacle every interval
+  if (frameCount % obstacleCreationInterval === 0) {
     createObstacle()
   }
 }
