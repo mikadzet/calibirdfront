@@ -8,7 +8,7 @@ const startGameButton = document.getElementById('startGameButton')
 const nicknameText = document.getElementById('nicknameText')
 const muteButton = document.getElementById('muteButton') // Mute button
 const API_URL = 'https://caligenadmin-59e2454701e5.herokuapp.com'
-const blockedNumbers = ['555999999', '59959959', '574110338'] //
+const blockedNumbers = ['555999999', '599599599', '574110338'] //
 
 const maxCanvasWidth = 800
 const maxCanvasHeight = 600
