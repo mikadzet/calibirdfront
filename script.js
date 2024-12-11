@@ -8,7 +8,7 @@ const startGameButton = document.getElementById('startGameButton')
 const nicknameText = document.getElementById('nicknameText')
 const muteButton = document.getElementById('muteButton') // Mute button
 const API_URL = 'https://caligenadmin-59e2454701e5.herokuapp.com'
-const blockedNumbers = ['555999999', '599599599', '574110338'] //
+const blockedNumbers = ['555999999', '599599599', '574110338', '522123123'] //
 
 const maxCanvasWidth = 800
 const maxCanvasHeight = 600
@@ -178,6 +178,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (nickname && number) {
+    if (blockedNumbers.includes(number)) {
+      alert('This phone number is blocked. Access denied.')
+      localStorage.removeItem('nickname')
+      localStorage.removeItem('number')
+      location.reload() // Force logout and reload
+      return
+    }
+
     nicknameText.innerText = nickname
     nicknameText.style.textShadow = '0 0 4px black'
 
