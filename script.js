@@ -24,7 +24,7 @@ const maxFallSpeed = 10
 let frameCount = 0
 let gameRunning = false
 let score = 0
-let highScore = Number(localStorage.getItem('highscore')) || 0
+let highScore
 
 let obstacles = []
 const minObstacleWidth = 50
@@ -70,7 +70,7 @@ const loadedObstacleBotImages = obstacleBotImages.map((src) => {
   return img
 })
 
-let userNickname = ''
+let userNickname = localStorage.getItem('nickname') || ''
 let leaderboard = []
 
 setInterval(() => {
@@ -80,8 +80,6 @@ setInterval(() => {
 }, 3000)
 
 setInterval(() => {
-  console.log(obstacleCreationInterval)
-
   if (obstacleCreationInterval > maxObstacleCreationInterval) {
     obstacleCreationInterval -= 1
   }
@@ -118,6 +116,8 @@ async function fetchLeaderboard() {
     const response = await fetch(`${API_URL}/leaderboard`)
     const data = await response.json()
     leaderboard = data // Update the global leaderboard variable
+    const currentUser = data.find((entry) => entry.nickname === userNickname)
+    highScore = currentUser.highscore || 0
   } catch (error) {
     console.error('Failed to fetch leaderboard:', error)
   }
@@ -192,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
 logOutButton.addEventListener('click', async () => {
   localStorage.removeItem('nickname')
   localStorage.removeItem('number')
-  localStorage.removeItem('highscore')
   location.reload()
 })
 
@@ -548,7 +547,6 @@ async function gameOver() {
   gameOverSound.play()
   obstacleSpeed = canvas.width / 200
 
-  localStorage.setItem('highscore', highScore)
   await updateUserHighscore(userNickname, highScore)
 
   fetchLeaderboard()
