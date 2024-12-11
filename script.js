@@ -392,6 +392,12 @@ canvas.addEventListener(
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && gameRunning) {
     velocity = lift
+  } else if (
+    e.code === 'Space' &&
+    !gameRunning &&
+    restartButton.style.display === 'block'
+  ) {
+    restartButton.click()
   }
 })
 document.addEventListener('dblclick', (e) => {
