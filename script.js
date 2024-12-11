@@ -24,7 +24,7 @@ const maxFallSpeed = 10
 let frameCount = 0
 let gameRunning = false
 let score = 0
-let highScore
+let highScore = 0
 
 let obstacles = []
 const minObstacleWidth = 50
