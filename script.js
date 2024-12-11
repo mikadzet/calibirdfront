@@ -8,6 +8,7 @@ const startGameButton = document.getElementById('startGameButton')
 const nicknameText = document.getElementById('nicknameText')
 const muteButton = document.getElementById('muteButton') // Mute button
 const API_URL = 'https://caligenadmin-59e2454701e5.herokuapp.com'
+const blockedNumbers = ['555999999', '59959959', '574110338'] //
 
 const maxCanvasWidth = 800
 const maxCanvasHeight = 600
@@ -313,6 +314,9 @@ startGameButton.addEventListener('click', async () => {
     return
   } else if (userNumber.length !== 9 || userNumber[0] !== '5') {
     alert('შეიყვანეთ სწორი ნომერი!')
+    return
+  } else if (blockedNumbers.includes(userNumber)) {
+    alert('This phone number is blocked. Access denied.')
     return
   }
 
